@@ -2,6 +2,8 @@
 
 > **Gère, organise et suis ta collection de photocards K-Pop comme un(e) pro.**  
 > Une application web légère, moderne et 100% offline, conçue spécialement pour les fans de K-Pop.
+> 
+> https://brunimaro.github.io/k-photocard-manager/
 
 ## ✨ Fonctionnalités
 
