@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -14,10 +13,7 @@
             --card-bg: rgba(255, 255, 255, 0.05); --glass: rgba(255, 255, 255, 0.08);
             --glass-border: rgba(255, 255, 255, 0.12); --text: #F8FAFC; --text-muted: #A0AEC0;
         }
-        body {
-            font-family: 'Poppins', sans-serif; background: var(--dark-bg);
-            color: var(--text); min-height: 100vh; overflow-x: hidden;
-        }
+        body { font-family: 'Poppins', sans-serif; background: var(--dark-bg); color: var(--text); min-height: 100vh; overflow-x: hidden; }
         .bg-animation { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; overflow: hidden; }
         .bg-animation .orb { position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.3; animation: float 20s infinite ease-in-out; }
         .orb:nth-child(1) { width: 400px; height: 400px; background: var(--pink); top: -100px; left: -100px; animation-delay: 0s; }
@@ -131,7 +127,9 @@
         .image-preview-box img { max-width: 100%; max-height: 100%; object-fit: contain; }
         .image-preview-box .placeholder-text { color: var(--text-muted); font-size: 0.85rem; }
         .remove-img-btn { position: absolute; top: 8px; right: 8px; background: rgba(239,68,68,0.8); border: none; color: white; width: 28px; height: 28px; border-radius: 6px; cursor: pointer; display: none; }
-        .image-upload-options { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
+        .image-upload-options { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 15px; }
+        .image-divider { display: flex; align-items: center; gap: 10px; margin: 15px 0; color: var(--text-muted); font-size: 0.8rem; }
+        .image-divider::before, .image-divider::after { content: ''; flex: 1; height: 1px; background: var(--glass-border); }
         @media (max-width: 768px) {
             .sidebar { transform: translateX(-100%); } .sidebar.open { transform: translateX(0); }
             .main-content { margin-left: 0; padding: 20px; padding-top: 70px; }
@@ -220,7 +218,7 @@
                     <div class="form-group"><label>📅 Année</label><input type="number" id="cardYear" placeholder="2024" min="2000" max="2030"></div>
                 </div>
 
-                <!-- 📸 SECTION APPAREIL PHOTO / IMAGE -->
+                <!-- 📸 PHOTO SECTION -->
                 <div class="form-group">
                     <label>🖼️ Photo de la photocard</label>
                     <div class="image-upload-options">
@@ -228,6 +226,10 @@
                         <input type="file" accept="image/*" id="galleryInput" style="display:none;" onchange="handleImageSelect(event)">
                         <button type="button" class="btn btn-secondary" onclick="document.getElementById('cameraInput').click()">📸 Prendre une photo</button>
                         <button type="button" class="btn btn-secondary" onclick="document.getElementById('galleryInput').click()">📁 Choisir un fichier</button>
+                    </div>
+                    <div class="image-divider">ou coller un lien</div>
+                    <div style="margin-top: 5px;">
+                        <input type="url" id="cardImageUrl" placeholder="https://exemple.com/photocard.jpg" oninput="updatePreviewFromUrl()">
                     </div>
                     <div class="image-preview-box" id="imagePreviewBox">
                         <span class="placeholder-text">Aperçu de l'image</span>
@@ -304,11 +306,15 @@
                     document.getElementById('cardStatus').value = card.status;
                     document.getElementById('cardCondition').value = card.condition;
                     document.getElementById('cardYear').value = card.year || '';
+                    document.getElementById('cardNotes').value = card.notes || '';
+
                     if (card.image) {
-                        currentImageBase64 = card.image;
+                        document.getElementById('cardImage').value = card.image;
+                        if (card.image.startsWith('http') || card.image.startsWith('https') || card.image.startsWith('//')) {
+                            document.getElementById('cardImageUrl').value = card.image;
+                        }
                         showImagePreview(card.image);
                     }
-                    document.getElementById('cardNotes').value = card.notes || '';
                 }
             }
             document.getElementById('modal').classList.add('active');
@@ -316,58 +322,72 @@
 
         function closeModal() { document.getElementById('modal').classList.remove('active'); }
 
-        // 📸 GESTION IMAGE / APPAREIL PHOTO
+        // 📸 GESTION IMAGE
         function handleImageSelect(event) {
             const file = event.target.files[0];
             if (!file) return;
+            if (!file.type.startsWith('image/')) { showToast('❌ Veuillez sélectionner une image'); return; }
 
-            if (!file.type.startsWith('image/')) {
-                showToast('❌ Veuillez sélectionner une image');
-                return;
-            }
-
-            // Compression pour éviter de saturer localStorage
             const reader = new FileReader();
             reader.onload = function(e) {
                 const img = new Image();
                 img.onload = function() {
                     const canvas = document.createElement('canvas');
                     const MAX_WIDTH = 800;
-                    const scaleSize = MAX_WIDTH / img.width;
+                    const scale = MAX_WIDTH / img.width;
                     canvas.width = MAX_WIDTH;
-                    canvas.height = img.height * scaleSize;
-                    
+                    canvas.height = img.height * scale;
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                    
                     currentImageBase64 = canvas.toDataURL('image/jpeg', 0.8);
                     showImagePreview(currentImageBase64);
+                    document.getElementById('cardImageUrl').value = '';
                 };
                 img.src = e.target.result;
             };
             reader.readAsDataURL(file);
         }
 
+        function updatePreviewFromUrl() {
+            const url = document.getElementById('cardImageUrl').value.trim();
+            const hiddenInput = document.getElementById('cardImage');
+            const img = document.getElementById('imagePreview');
+            const placeholder = document.querySelector('#imagePreviewBox .placeholder-text');
+            const removeBtn = document.getElementById('removeImgBtn');
+
+            if (url) {
+                hiddenInput.value = url;
+                currentImageBase64 = null;
+                showImagePreview(url);
+            } else {
+                hiddenInput.value = '';
+                img.style.display = 'none';
+                placeholder.style.display = 'block';
+                removeBtn.style.display = 'none';
+            }
+        }
+
         function showImagePreview(src) {
             const img = document.getElementById('imagePreview');
             const placeholder = document.querySelector('#imagePreviewBox .placeholder-text');
             const removeBtn = document.getElementById('removeImgBtn');
-            const input = document.getElementById('cardImage');
+            const hiddenInput = document.getElementById('cardImage');
 
             img.src = src;
             img.style.display = 'block';
             placeholder.style.display = 'none';
             removeBtn.style.display = 'flex';
-            input.value = src;
+            hiddenInput.value = src;
         }
 
         function clearImage() {
             currentImageBase64 = null;
             document.getElementById('cameraInput').value = '';
             document.getElementById('galleryInput').value = '';
+            document.getElementById('cardImageUrl').value = '';
             document.getElementById('cardImage').value = '';
-            document.getElementById('imagePreview').style.display = 'none';
-            document.getElementById('imagePreview').src = '';
+            const img = document.getElementById('imagePreview');
+            img.src = ''; img.style.display = 'none';
             document.querySelector('#imagePreviewBox .placeholder-text').style.display = 'block';
             document.getElementById('removeImgBtn').style.display = 'none';
         }
@@ -375,6 +395,9 @@
         function saveCard(event) {
             event.preventDefault();
             const id = document.getElementById('cardId').value;
+            const urlInput = document.getElementById('cardImageUrl').value.trim();
+            const finalImage = urlInput || document.getElementById('cardImage').value;
+
             const cardData = {
                 id: id || Date.now().toString(),
                 group: document.getElementById('cardGroup').value.trim(),
@@ -384,7 +407,7 @@
                 status: document.getElementById('cardStatus').value,
                 condition: document.getElementById('cardCondition').value,
                 year: parseInt(document.getElementById('cardYear').value) || null,
-                image: document.getElementById('cardImage').value || currentImageBase64 || '',
+                image: finalImage,
                 notes: document.getElementById('cardNotes').value.trim(),
                 createdAt: id ? (photocards.find(c => c.id === id)?.createdAt || Date.now()) : Date.now()
             };
@@ -410,11 +433,6 @@
             }
         }
 
-        function changeStatus(id, newStatus) {
-            const card = photocards.find(c => c.id === id);
-            if (card) { card.status = newStatus; saveData(); renderCollection(); updateStats(); renderWishlist(); renderTrade(); showToast('📋 Statut mis à jour !'); }
-        }
-
         function saveData() { localStorage.setItem('kphotocards', JSON.stringify(photocards)); }
 
         function updateStats() {
@@ -430,7 +448,6 @@
             const statusLabels = {'collected': 'Collectée', 'wanted': 'Wishlist', 'to-trade': 'À échanger', 'duplicated': 'Dupliquée'};
             const rarityLabels = {'common': 'Common', 'uncommon': 'Uncommon', 'rare': 'Rare', 'super-rare': 'Super Rare', 'legendary': 'Legendary'};
             const conditionLabels = {'mint': '✨ Mint', 'near-mint': '🌟 Near Mint', 'excellent': '💎 Excellent', 'good': '👍 Good', 'fair': '📦 Fair'};
-            
             const imageContent = card.image 
                 ? `<img class="card-image" src="${card.image}" alt="${card.member}" onerror="this.outerHTML='<div class=\\'card-image-placeholder\\'>🎵</div>'">` 
                 : `<div class="card-image-placeholder">🎵</div>`;
@@ -457,9 +474,7 @@
         }
 
         function escapeHtml(text) { const div = document.createElement('div'); div.textContent = text; return div.innerHTML; }
-
         function filterCards() { renderCollection(); }
-
         function getFilteredCards() {
             const search = document.getElementById('searchInput').value.toLowerCase();
             const groupFilter = document.getElementById('filterGroup').value;
@@ -467,14 +482,12 @@
             const statusFilter = document.getElementById('filterStatus').value;
             const rarityFilter = document.getElementById('filterRarity').value;
             const sort = document.getElementById('sortSelect').value;
-
             let filtered = photocards.filter(c => c.status === 'collected' || c.status === 'duplicated');
             if (search) filtered = filtered.filter(c => c.group.toLowerCase().includes(search) || c.member.toLowerCase().includes(search) || (c.album && c.album.toLowerCase().includes(search)) || (c.notes && c.notes.toLowerCase().includes(search)));
             if (groupFilter) filtered = filtered.filter(c => c.group.toLowerCase() === groupFilter.toLowerCase());
             if (memberFilter) filtered = filtered.filter(c => c.member.toLowerCase() === memberFilter.toLowerCase());
             if (statusFilter) filtered = filtered.filter(c => c.status === statusFilter);
             if (rarityFilter) filtered = filtered.filter(c => c.rarity === rarityFilter);
-
             const rarityOrder = { 'common': 1, 'uncommon': 2, 'rare': 3, 'super-rare': 4, 'legendary': 5 };
             switch (sort) {
                 case 'newest': filtered.sort((a, b) => b.createdAt - a.createdAt); break;
@@ -490,17 +503,14 @@
         function renderCollection() {
             const container = document.getElementById('collection-container');
             const filtered = getFilteredCards();
-            if (filtered.length === 0) {
-                container.innerHTML = `<div class="empty-state"><div class="icon">💎</div><h3>Aucune photocard dans ta collection</h3><p>Commence par ajouter tes photocards préférées !</p><button class="btn btn-primary" onclick="openModal()">✨ Ajouter ma première photocard</button></div>`;
-            } else {
-                container.innerHTML = `<div class="photocard-grid">${filtered.map(renderCardHTML).join('')}</div>`;
-            }
+            container.innerHTML = filtered.length === 0 
+                ? `<div class="empty-state"><div class="icon">💎</div><h3>Aucune photocard dans ta collection</h3><p>Commence par ajouter tes photocards préférées !</p><button class="btn btn-primary" onclick="openModal()">✨ Ajouter ma première photocard</button></div>`
+                : `<div class="photocard-grid">${filtered.map(renderCardHTML).join('')}</div>`;
         }
 
         function renderRecentCards() {
             const recent = [...photocards].sort((a, b) => b.createdAt - a.createdAt).slice(0, 8);
-            const container = document.getElementById('recent-cards');
-            container.innerHTML = recent.length === 0 
+            document.getElementById('recent-cards').innerHTML = recent.length === 0 
                 ? `<div class="empty-state" style="grid-column: 1/-1;"><div class="icon">✨</div><h3>Ta collection est vide</h3><p>Commence à ajouter des photocards pour les voir ici !</p></div>`
                 : recent.map(renderCardHTML).join('');
         }
@@ -546,19 +556,19 @@
         function updateFilterOptions() {
             const groupSelect = document.getElementById('filterGroup'); const memberSelect = document.getElementById('filterMember');
             const groups = [...new Set(photocards.map(c => c.group))].sort(); const members = [...new Set(photocards.map(c => c.member))].sort();
-            const currentGroup = groupSelect.value; const currentMember = memberSelect.value;
+            const cg = groupSelect.value; const cm = memberSelect.value;
             groupSelect.innerHTML = '<option value="">Tous les groupes</option>' + groups.map(g => `<option value="${g.toLowerCase()}">${g}</option>`).join('');
             memberSelect.innerHTML = '<option value="">Tous les membres</option>' + members.map(m => `<option value="${m.toLowerCase()}">${m}</option>`).join('');
-            groupSelect.value = currentGroup; memberSelect.value = currentMember;
+            groupSelect.value = cg; memberSelect.value = cm;
         }
         function setView(view, btn) {
             currentView = view; document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active');
             const container = document.getElementById('collection-container');
             container.innerHTML = view === 'list' ? container.innerHTML.replace('photocard-grid', 'photocard-list') : container.innerHTML.replace('photocard-list', 'photocard-grid');
         }
-        function showToast(message) { const container = document.getElementById('toastContainer'); const toast = document.createElement('div'); toast.className = 'toast'; toast.textContent = message; container.appendChild(toast); setTimeout(() => toast.remove(), 3000); }
-        function exportData() { const data = JSON.stringify(photocards, null, 2); const blob = new Blob([data], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `kphotocards_backup_${new Date().toISOString().split('T')[0]}.json`; a.click(); URL.revokeObjectURL(url); showToast('💾 Données exportées !'); }
-        function importData(event) { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = (e) => { try { const data = JSON.parse(e.target.result); if (Array.isArray(data)) { photocards = data; saveData(); renderCollection(); updateStats(); updateFilterOptions(); renderRecentCards(); renderWishlist(); renderCategories(); renderTrade(); showToast('📥 Données importées avec succès !'); } } catch (err) { showToast('❌ Erreur lors de l\'import'); } }; reader.readAsText(file); event.target.value = ''; }
+        function showToast(message) { const c = document.getElementById('toastContainer'); const t = document.createElement('div'); t.className = 'toast'; t.textContent = message; c.appendChild(t); setTimeout(() => t.remove(), 3000); }
+        function exportData() { const d = JSON.stringify(photocards, null, 2); const b = new Blob([d], { type: 'application/json' }); const u = URL.createObjectURL(b); const a = document.createElement('a'); a.href = u; a.download = `kphotocards_backup_${new Date().toISOString().split('T')[0]}.json`; a.click(); URL.revokeObjectURL(u); showToast('💾 Données exportées !'); }
+        function importData(event) { const f = event.target.files[0]; if (!f) return; const r = new FileReader(); r.onload = (e) => { try { const d = JSON.parse(e.target.result); if (Array.isArray(d)) { photocards = d; saveData(); renderCollection(); updateStats(); updateFilterOptions(); renderRecentCards(); renderWishlist(); renderCategories(); renderTrade(); showToast('📥 Données importées !'); } } catch (err) { showToast('❌ Erreur lors de l\'import'); } }; r.readAsText(f); event.target.value = ''; }
         document.getElementById('modal').addEventListener('click', (e) => { if (e.target === document.getElementById('modal')) closeModal(); });
         document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); if (e.key === 'n' && e.ctrlKey) { e.preventDefault(); openModal(); } });
     </script>
