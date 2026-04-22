@@ -10,19 +10,20 @@
 | Catégorie | Détails |
 |---|---|
 | 🏠 **Dashboard** | Statistiques en temps réel : total, collectées, wishlist, à échanger, groupes, legendary |
-| 💎 **Collection** | Ajout, modification, suppression avec formulaire intuitif et prévisualisation d'image |
+| 📸 **3 modes d'ajout d'image** | Prendre une photo 📱, choisir un fichier 💾, ou coller une URL 🔗 |
+| 💎 **Collection complète** | Ajout, modification, suppression avec formulaire intuitif et prévisualisation en direct |
 | 🔍 **Filtres & Recherche** | Recherche textuelle + filtres par groupe, membre, statut, rareté et tri personnalisé |
-| 📂 **Catégories** | Organisation automatique par groupe et par statut (Collectée, Wishlist, Trade, Dupliquée) |
+| 📂 **Catégories auto** | Organisation intelligente par groupe et par statut |
 | 💫 **Wishlist & Trade** | Pages dédiées pour tracker les photocards manquantes et celles à échanger |
-| 💾 **Export/Import** | Sauvegarde complète en JSON pour ne jamais perdre ta collection |
-| 📱 **Responsive** | Interface adaptative (desktop, tablette, mobile) avec menu latéral rétractable |
+| 💾 **Export/Import JSON** | Sauvegarde complète pour ne jamais perdre ta collection |
+| 📱 **Responsive & Offline** | Interface adaptative, fonctionne sans internet après le premier chargement |
 | 🎨 **UI/UX K-Pop** | Glassmorphism, gradients rose/violet, animations fluides et effets ✨ interactifs |
 
 ## 🛠️ Technologies Utilisées
 
 - **HTML5** – Structure sémantique & accessible
 - **CSS3** – Variables, Flexbox/Grid, Glassmorphism, Animations CSS, Media Queries
-- **JavaScript (ES6+)** – Logique applicative, DOM manipulation, LocalStorage
+- **JavaScript (ES6+)** – Logique applicative, DOM, Canvas (compression d'images), LocalStorage
 - **Google Fonts** – `Poppins` & `Quicksand`
 - **Aucun framework** – 100% vanilla, léger et rapide
 
